@@ -6,6 +6,10 @@
 <meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet">
 <meta name="referrer" content="no-referrer">
 <title>医師別診療報酬</title>
+<link rel="icon" type="image/x-icon" href="assets/brand/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/brand/favicon-192.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -68,6 +72,16 @@
 
   .empty { color: var(--muted); padding: 20px; text-align: center; }
   .meta { font-size: 11px; color: var(--muted); text-align: right; margin-top: 8px; }
+
+  /* ★ブランドフッター（全Webアプリ共通） */
+  .brand-footer {
+    margin-top: 32px; padding: 16px 0;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 12px; color: var(--muted);
+  }
+  .brand-footer img { height: 24px; width: auto; opacity: 0.85; }
+  .brand-footer a { color: var(--muted); text-decoration: none; }
 </style>
 </head>
 <body>
@@ -144,6 +158,12 @@
 </div>
 
 <div class="meta" id="meta"></div>
+
+<footer class="brand-footer">
+  <span>powered by</span>
+  <img src="assets/brand/group-logo.png" alt="たまき青空病院グループ">
+  <span>たまき青空病院グループ</span>
+</footer>
 
 <script src="assets/app.js"></script>
 </body>

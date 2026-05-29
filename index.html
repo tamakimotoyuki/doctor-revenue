@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>医師別診療報酬</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --brand: #0068c4;
+    --accent: #5BA640;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #d8dee5;
+    --text: #1a2733;
+    --muted: #6b7785;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Yu Gothic UI", "Meiryo", sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 16px;
+  }
+  h1 { font-size: 20px; margin: 0 0 12px; color: var(--brand); }
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab {
+    padding: 8px 18px; cursor: pointer;
+    background: #e7ebf0; border: 1px solid var(--border); border-bottom: none;
+    border-radius: 6px 6px 0 0; font-size: 14px;
+  }
+  .tab.active {
+    background: var(--brand); color: white; border-color: var(--brand);
+    font-weight: bold;
+  }
+  .tabs.years .tab.active { background: var(--accent); border-color: var(--accent); }
+
+  .controls {
+    display: flex; gap: 16px; align-items: center;
+    padding: 8px 0; font-size: 13px;
+  }
+  .controls label { cursor: pointer; }
+  .controls input { vertical-align: middle; }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px; margin-bottom: 12px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--muted); }
+
+  .overall-wrap { position: relative; height: 280px; }
+  .overall-wrap canvas { width: 100% !important; height: 100% !important; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px;
+  }
+  .card .name { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
+  .card .stat { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .card canvas { width: 100% !important; height: 110px !important; }
+
+  .empty { color: var(--muted); padding: 20px; text-align: center; }
+  .meta { font-size: 11px; color: var(--muted); text-align: right; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ★ 簡易ID/PWゲート（素人除け・本気の認証ではない） -->
+<div id="loginOverlay" style="position:fixed;inset:0;background:#f5f7fa;z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <form id="loginForm" style="background:white;padding:32px 40px;border-radius:8px;border:1px solid #d8dee5;box-shadow:0 4px 20px rgba(0,0,0,.08);min-width:320px;">
+    <h2 style="margin:0 0 16px;color:#0068c4;font-size:18px;">医師別診療報酬 ログイン</h2>
+    <div style="margin-bottom:10px;">
+      <label style="display:block;font-size:12px;color:#6b7785;margin-bottom:4px;">ID</label>
+      <input id="loginId" type="text" autocomplete="off" style="width:100%;padding:8px;border:1px solid #d8dee5;border-radius:4px;font-size:14px;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;color:#6b7785;margin-bottom:4px;">パスワード</label>
+      <input id="loginPw" type="password" autocomplete="off" style="width:100%;padding:8px;border:1px solid #d8dee5;border-radius:4px;font-size:14px;" />
+    </div>
+    <button type="submit" style="width:100%;padding:10px;background:#0068c4;color:white;border:none;border-radius:4px;font-size:14px;font-weight:bold;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="margin-top:8px;color:#d62728;font-size:12px;min-height:16px;"></div>
+  </form>
+</div>
+
+<script>
+(function(){
+  // 既存セッションのチェック
+  if (sessionStorage.getItem("doctorsAppAuth") === "ok") {
+    document.getElementById("loginOverlay").style.display = "none";
+    return;
+  }
+  // ログインフォーム
+  document.getElementById("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var id = document.getElementById("loginId").value.trim();
+    var pw = document.getElementById("loginPw").value;
+    // ★ 簡易ハッシュ（btoa は base64・暗号ではない・難読化レベル）
+    // tamaki / aozora
+    if (btoa(id) === "dGFtYWtp" && btoa(pw) === "YW96b3Jh") {
+      sessionStorage.setItem("doctorsAppAuth", "ok");
+      document.getElementById("loginOverlay").style.display = "none";
+    } else {
+      document.getElementById("loginErr").textContent = "IDまたはパスワードが違います";
+    }
+  });
+  document.getElementById("loginId").focus();
+})();
+</script>
+
+<h1>医師別診療報酬</h1>
+
+<div class="tabs" id="facilityTabs"></div>
+<div class="tabs years" id="yearTabs"></div>
+
+<div class="controls">
+  <span>表示モード（医師別グリッド）:</span>
+  <label><input type="radio" name="mode" value="monthly" checked> 単月</label>
+  <label><input type="radio" name="mode" value="cumulative"> 累計</label>
+  <span style="margin-left:24px; color: var(--muted);">
+    ※ 全体推移は常に全年度連続表示・医師グリッドは選択年度のみ・不在医師（年合計0）は非表示
+  </span>
+</div>
+
+<div class="panel">
+  <h2>全体売上推移（試算表方式・年度別グループ棒・新年度=濃色）</h2>
+  <div class="overall-wrap"><canvas id="overallChart"></canvas></div>
+</div>
+
+<div class="panel">
+  <h2 id="byDocTitle">医師別売上推移（選択年度・上位16名重ね・凡例クリックで個別ON/OFF）</h2>
+  <div class="overall-wrap"><canvas id="byDoctorChart"></canvas></div>
+</div>
+
+<div class="panel">
+  <h2 id="gridTitle">医師別（年度合計上位16名）</h2>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="meta" id="meta"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

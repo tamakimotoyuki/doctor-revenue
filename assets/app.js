@@ -1,7 +1,8 @@
 // 医師別診療報酬 Webアプリ
 const BRAND = "#0068c4";
 const ACCENT = "#5BA640";
-const TOP_N = 16;
+const TOP_N = 16;          // ②医師別重ね折れ線で重ねる人数（多すぎると線が判別不能）
+const GRID_LIMIT = null;   // ③医師別グリッド: nullで全員表示（年合計0は別途除外）
 const MONTH_LABELS = ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
 
 const state = {
@@ -209,9 +210,10 @@ function renderOverall() {
 
 function renderGrid() {
   const ranked = getRankedDoctors();
+  const showList = GRID_LIMIT == null ? ranked : ranked.slice(0, GRID_LIMIT);
 
   document.getElementById("gridTitle").textContent =
-    `医師別（${state.fy}年度・在籍${ranked.length}名中 上位${Math.min(TOP_N, ranked.length)}名・${state.mode === "cumulative" ? "累計" : "単月"}）`;
+    `医師別（${state.fy}年度・在籍${ranked.length}名全員・${state.mode === "cumulative" ? "累計" : "単月"}・金額大きい順）`;
 
   // 既存チャート破棄
   state.cardCharts.forEach(c => c.destroy());
@@ -220,13 +222,12 @@ function renderGrid() {
   const gridEl = document.getElementById("grid");
   gridEl.innerHTML = "";
 
-  const top = ranked.slice(0, TOP_N);
-  if (top.length === 0) {
+  if (showList.length === 0) {
     gridEl.innerHTML = '<div class="empty">この年度の在籍医師データがありません</div>';
     return;
   }
 
-  top.forEach(d => {
+  showList.forEach(d => {
     const card = document.createElement("div");
     card.className = "card";
     const monthsActive = d.vals.filter(v => v > 0).length;
